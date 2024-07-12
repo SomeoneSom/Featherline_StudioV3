@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -8,9 +8,5 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>feahter.ico</ApplicationIcon>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="feahter.ico" />
-  </ItemGroup>
 
 </Project>
