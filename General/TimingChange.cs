@@ -1,4 +1,4 @@
-﻿namespace Featherline;
+namespace Featherline;
 
 class TimingChange
 {
@@ -34,7 +34,7 @@ class TimingChange
             wasFirstOrLast = true;
         }
         if (i == target.Length - 1) {
-            int cap = GAManager.settings.Framecount - 1;
+            int cap = Settings.Framecount - 1;
             if (target[i] > cap) target[i] = cap;
             else LeftFix();
             wasFirstOrLast = true;

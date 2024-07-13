@@ -32,7 +32,7 @@ public static class GAManager
     public static Random rand = new Random();
 
     private static FrameGenesGA ga;
-    private static int generation;
+    private static int generation;  
 
     private static Stopwatch algTimer = new Stopwatch();
 
