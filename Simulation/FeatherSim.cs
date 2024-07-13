@@ -1,13 +1,11 @@
-﻿namespace Featherline;
+namespace Featherline;
 
 public partial class FeatherSim
 {
 	public const float DeltaTime = 0.0166667f;
 
-	public Settings sett;
-	public FeatherSim(Settings s)
+	public FeatherSim()
 	{
-		sett = s;
 		CheckDeath = Level.HasHazards ? (Action)DeathCheck : () => { };
 	}
 	public FeatherSim AddInputCleaner(bool extremeTurns)
@@ -140,7 +138,7 @@ public partial class FeatherSim
 		else {
 			double nextCpDist = fs.GetDistToNextCp();
 			fitness = cpExtras - fitEval.closestDist * 2d - fitEval.atFrame - nextCpDist - fs.f;
-			fCount = sett.Framecount;
+			fCount = Settings.Framecount;
 		}
 	}
 

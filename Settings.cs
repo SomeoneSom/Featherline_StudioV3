@@ -13,8 +13,6 @@ public class Settings
 
     public static string[]? Checkpoints;
 
-    public string? CustomSpinnerNames;
-
     public static bool AvoidWalls = false;
 
     public static string[]? ManualHitboxes;
@@ -26,4 +24,6 @@ public class Settings
     public static int ShuffleCount = 6;
 
     public static int MaxThreadCount = Environment.ProcessorCount;
+
+    public static string? InfoDump;
 }

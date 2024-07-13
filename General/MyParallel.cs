@@ -1,14 +1,14 @@
-﻿namespace Featherline;
+namespace Featherline;
 
 static class MyParallel
 {
     public static Action<int, int, Action<int>>? Run;
 
-    public static void Initialize(Settings sett)
+    public static void Initialize()
     {
-        var opt = new ParallelOptions() { MaxDegreeOfParallelism = sett.MaxThreadCount };
+        var opt = new ParallelOptions() { MaxDegreeOfParallelism = Settings.MaxThreadCount };
 
-        Run = sett.MaxThreadCount == 1 ? NonParallel : (start, to, Act) => Parallel.For(start, to, opt, Act);
+        Run = Settings.MaxThreadCount == 1 ? NonParallel : (start, to, Act) => Parallel.For(start, to, opt, Act);
 
         void NonParallel(int start, int to, Action<int> Act)
         {

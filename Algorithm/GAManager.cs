@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
@@ -29,7 +29,6 @@ public static class GAManager
 
     public const float Revolution = 360f;
 
-    public static Settings settings;
     public static Random rand = new Random();
 
     private static FrameGenesGA ga;
@@ -44,11 +43,8 @@ public static class GAManager
     public static List<(AngleSet inputs, double fitness, AlgPhase source)> finalResultCandidates;
     public static AlgPhase lastPhase;
 
-    private static Control Button;
-
-    public static bool RunAlgorithm(Form1 sender, Control button, bool debugFavorite)
+    public static bool RunAlgorithm(bool debugFavorite)
     {
-        Button = button;
         abortAlgorithm = false;
         algTimer.Restart();
         if (!InitializeAlgorithm())
@@ -64,19 +60,19 @@ public static class GAManager
                 Console.WriteLine("Featherline cannot handle more than 3 decimal points.");
                 return false;
             }
-            var initGenes = RawFavorite(settings.Favorite);
+            var initGenes = RawFavorite(Settings.Favorite);
 
             if (initGenes is null) {
                 return false;
                 Console.WriteLine("No initial inputs to debug");
             }
             else
-                new FeatherSim(settings).Debug(initGenes);
+                new FeatherSim().Debug(initGenes);
 
             return false;
         }
 
-        if (settings.FrameBasedOnly | !settings.TimingTestFavDirectly) {
+        if (Settings.FrameBasedOnly | !Settings.TimingTestFavDirectly) {
             DoFrameGeneBasedAlgorithm();
             if (abortAlgorithm) {
                 Console.Write("\n\n");
@@ -85,23 +81,23 @@ public static class GAManager
             Console.WriteLine("\nBasic Algorithm Finished!\n");
         }
 
-        if (!settings.FrameBasedOnly) {
+        if (!Settings.FrameBasedOnly) {
             TimingTester TT;
-            if (settings.TimingTestFavDirectly) {
+            if (Settings.TimingTestFavDirectly) {
                 if (!ValidFavDecPlaces()) {
                     Console.WriteLine("Featherline cannot handle more than 3 decimal points.");
                     return false;
                 }
-                if (ParseFavorite(settings.Favorite, settings.Framecount) is null)
+                if (ParseFavorite(Settings.Favorite, Settings.Framecount) is null)
                     Console.WriteLine("No initial inputs to test timings on.");
                 else {
-                    TT = new TimingTester(settings, settings.Favorite);
+                    TT = new TimingTester(Settings.Favorite);
                     TT.Run();
                 }
             }
             else {
                 Level.PermanentDistFilter(ga.inds[0].genes);
-                TT = new TimingTester(settings, ga.inds[0]);
+                TT = new TimingTester(ga.inds[0]);
                 TT.Run();
             }
         }
@@ -126,7 +122,7 @@ public static class GAManager
 
         // data extraction and input exception handling
         try {
-            Level.Prepare(Form1.settings);
+            Level.Prepare();
         }
         catch (ArgumentException e) {
             Console.WriteLine(e.Message);
@@ -143,8 +139,7 @@ public static class GAManager
             return false;
         }
 
-        settings = Form1.settings.Copy();
-        MyParallel.Initialize(settings);
+        MyParallel.Initialize();
         AngleCalc.Initialize();
         return true;
     }
@@ -166,32 +161,13 @@ public static class GAManager
                     _ => "[error lol]."
                 });
 
-            new FeatherSim(settings)
+            new FeatherSim()
                 .AddInputCleaner(best.source == AlgPhase.FrameGenes)
                 .SimulateIndivitual(best.inputs)
                 .Evaluate(out _, out int fCount);
 
             var output = best.inputs.ToString(fCount);
             Console.WriteLine("\n" + output);
-
-            // log in result log.txt
-            if (settings.LogResults && !(algTimer.ElapsedMilliseconds < 5000 && abortAlgorithm)) {
-                try {
-                    var logFile = File.Exists("result log.txt")
-                        ? File.AppendText("result log.txt")
-                        : new StreamWriter(File.Create("result log.txt"));
-                    logFile.WriteLine($"{DateTime.Now}\nBeginning position: {Level.startState.fState.ExactPosition}\n\n{output}");
-                    logFile.Close();
-                }
-                catch {
-                    Console.WriteLine("Failed to log the result to result log.txt");
-                }
-            }
-
-            if (!abortAlgorithm) {
-                Button.Invoke((Action)(() => Clipboard.SetText(output)));
-                Console.WriteLine("Copied to your clipboard!");
-            }
         }
 
         Console.WriteLine($"\nAlgorithm took {algTimer.Elapsed} to run.");
@@ -207,7 +183,6 @@ public static class GAManager
         Level.Colliders = null;
         Level.Killboxes = null;
         Level.Spikes = null;
-        settings = null;
         ga = null;
         AnglePerfector.baseInfo = null;
         AnglePerfector.baseInfoWallboops = null;
@@ -226,10 +201,10 @@ public static class GAManager
     private static void DoFrameGeneBasedAlgorithm()
     {
         lastPhase = AlgPhase.FrameGenes;
-        var fav = RawFavorite(settings.Favorite);
+        var fav = RawFavorite(Settings.Favorite);
         int startAt = Math.Max(5, fav is null ? 0 : fav.Length);
 
-        ga = new FrameGenesGA(settings, startAt);
+        ga = new FrameGenesGA(startAt);
         generation = 1;
 
         DoGensWhileSimulationsGetLonger(startAt);
@@ -241,17 +216,17 @@ public static class GAManager
 
     private static void DoGensWhileSimulationsGetLonger(int startAt)
     {
-        int gensForIncreasingFrameCount = Math.Max(1, settings.Generations / 2);
+        int gensForIncreasingFrameCount = Math.Max(1, Settings.Generations / 2);
 
-        int divisor = settings.Framecount - startAt;
+        int divisor = Settings.Framecount - startAt;
         if (divisor == 0) return;
 
         int gensPerFrame = gensForIncreasingFrameCount / divisor;
-        for (int i = startAt; i < settings.Framecount; i++) {
+        for (int i = startAt; i < Settings.Framecount; i++) {
             for (int j = 0; j < gensPerFrame; j++) {
                 if (abortAlgorithm) return;
                 ga.DoGeneration(i, true);
-                GenerationFeedback(generation, settings.Generations, ga.GetBestFitness());
+                GenerationFeedback(generation, Settings.Generations, ga.GetBestFitness());
                 generation++;
             }
         }
@@ -259,10 +234,10 @@ public static class GAManager
 
     private static void NormalGenerations()
     {
-        for (; generation <= settings.Generations; generation++) {
+        for (; generation <= Settings.Generations; generation++) {
             if (abortAlgorithm) return;
-            GenerationFeedback(generation, settings.Generations, ga.GetBestFitness());
-            ga.DoGeneration(settings.Framecount, true);
+            GenerationFeedback(generation, Settings.Generations, ga.GetBestFitness());
+            ga.DoGeneration(Settings.Framecount, true);
         }
     }
 
@@ -328,7 +303,7 @@ public static class GAManager
 
     private static bool ValidFavDecPlaces()
     {
-        foreach (Match m in Regex.Matches(settings.Favorite, @"\d,F,\d*\.?(\d*)"))
+        foreach (Match m in Regex.Matches(Settings.Favorite, @"\d,F,\d*\.?(\d*)"))
             if (m.Groups[1].Length > 3)
                 return false;
         return true;

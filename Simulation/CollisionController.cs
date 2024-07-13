@@ -1,4 +1,4 @@
-﻿using static Featherline.Level;
+using static Featherline.Level;
 
 namespace Featherline;
 
@@ -107,14 +107,14 @@ public partial class FeatherSim
                 continue;
             }
             if (JT.Booped(fs)) {
-                stop = sett.AvoidWalls & fs.f > 10;
+                stop = Settings.AvoidWalls & fs.f > 10;
                 wallboops.Add(fs.f);
                 return;
             }
         }
         foreach (var JT in distFiltNormalJTs) {
             if (JT.Booped(fs)) {
-                stop = sett.AvoidWalls & fs.f > 10;
+                stop = Settings.AvoidWalls & fs.f > 10;
                 wallboops.Add(fs.f);
                 return;
             }
@@ -128,7 +128,7 @@ public partial class FeatherSim
             // custom colliders (take priority over room border)
             for (int i = 0; i < distFiltColls.Length; i++) {
                 if (distFiltColls[i].TouchingAsFeather(fs.pos)) {
-                    stop = sett.AvoidWalls & fs.f > 10;
+                    stop = Settings.AvoidWalls & fs.f > 10;
                     wallboops.Add(fs.f);
                     BounceX(fs.spd.X > 0
                         ? distFiltColls[i].bounds.L - 1
@@ -158,7 +158,7 @@ public partial class FeatherSim
 
             int x = fs.spd.X > 0 ? R : L;
             if (Tiles.map[U][x] | Tiles.map[D][x]) {
-                stop = sett.AvoidWalls & fs.f > 10;
+                stop = Settings.AvoidWalls & fs.f > 10;
                 wallboops.Add(fs.f);
                 BounceX((fs.pos.X + (fs.spd.X > 0 ? -4 : 3) - Tiles.x) / 8 * 8 + 4 + Tiles.x);
             }
@@ -171,7 +171,7 @@ public partial class FeatherSim
 
             for (int i = 0; i < distFiltColls.Length; i++) {
                 if (distFiltColls[i].TouchingAsFeather(fs.pos)) {
-                    stop = sett.AvoidWalls & fs.f > 10;
+                    stop = Settings.AvoidWalls & fs.f > 10;
                     wallboops.Add(fs.f);
                     BounceY(fs.spd.Y > 0
                         ? distFiltColls[i].bounds.U - 1
@@ -184,7 +184,7 @@ public partial class FeatherSim
 
             int y = fs.spd.Y > 0 ? D : U;
             if (Tiles.map[y][L] | Tiles.map[y][R]) {
-                stop = sett.AvoidWalls & fs.f > 10;
+                stop = Settings.AvoidWalls & fs.f > 10;
                 wallboops.Add(fs.f);
                 BounceY((fs.pos.Y + (fs.spd.Y > 0 ? -2 : 4) - Tiles.y) / 8 * 8 + 2 + Tiles.y);
             }

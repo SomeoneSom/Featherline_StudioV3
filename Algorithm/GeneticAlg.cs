@@ -1,12 +1,10 @@
-﻿using static System.Math;
+using static System.Math;
 using static Featherline.GAManager;
 
 namespace Featherline
 {
     public class FrameGenesGA
     {
-        public Settings sett;
-
         private const float crossoverProb = 0.2f;
         private const float mutationProb = 0.8f;
         private float mutationMagnitude;
@@ -25,21 +23,21 @@ namespace Featherline
 
             GenerateNewChildren();
 
-            int shortestFrameCount = sett.Framecount;
+            int shortestFrameCount = Settings.Framecount;
 
-            MyParallel.Run(sett.SurvivorCount, inds.Length, DoSim);
+            MyParallel.Run(Settings.SurvivorCount, inds.Length, DoSim);
 
             inds = inds.OrderByDescending(ind => ind.fitness).ToArray();
 
-            if (shortestFrameCount < sett.Framecount) {
-                sett.Framecount = shortestFrameCount;
+            if (shortestFrameCount < Settings.Framecount) {
+                Settings.Framecount = shortestFrameCount;
                 foreach (var ind in inds)
                     ind.genes.Resize(shortestFrameCount);
             }
 
             void DoSim(int i)
             {
-                new FeatherSim(sett).AddInputCleaner(true).SimulateIndivitual(inds[i].genes, upToFrame, inds[i].SkippingState)
+                new FeatherSim().AddInputCleaner(true).SimulateIndivitual(inds[i].genes, upToFrame, inds[i].SkippingState)
                     .Evaluate(out var fitness, out int frames);
                 inds[i].fitness = fitness;
                 shortestFrameCount = Min(shortestFrameCount, frames);
@@ -48,22 +46,22 @@ namespace Featherline
 
         private void GetAllStatesOfBest()
         {
-            for (int i = 0; i < sett.SurvivorCount; i++)
+            for (int i = 0; i < Settings.SurvivorCount; i++)
                 if (inds[i].fStates is null)
-                    inds[i].fStates = new FeatherSim(sett).GetAllFrameData(inds[i].genes, out _, out _);
+                    inds[i].fStates = new FeatherSim().GetAllFrameData(inds[i].genes, out _, out _);
         }
 
         #region GeneratingChildren
 
         public void GenerateNewChildren()
         {
-            for (int i = sett.SurvivorCount; i < inds.Length;) {
+            for (int i = Settings.SurvivorCount; i < inds.Length;) {
                 float actionChooser = (float)rand.NextDouble();
 
                 // crossover
                 if (crossoverProb > actionChooser) {
-                    int i1 = rand.Next(sett.SurvivorCount);
-                    int i2 = rand.Next(sett.SurvivorCount - 1);
+                    int i1 = rand.Next(Settings.SurvivorCount);
+                    int i2 = rand.Next(Settings.SurvivorCount - 1);
                     i2 += i2 >= i1 ? 1 : 0;
 
                     var res = Crossover(inds[i1], inds[i2]);
@@ -75,7 +73,7 @@ namespace Featherline
 
                 // mutation
                 else if (mutationProb > actionChooser) {
-                    int parent = rand.Next(sett.SurvivorCount);
+                    int parent = rand.Next(Settings.SurvivorCount);
                     inds[parent].genes.CopyTo(inds[i].genes);
 
                     if (UseSavestates) {
@@ -89,7 +87,7 @@ namespace Featherline
 
                 // simplification
                 else {
-                    int parent = rand.Next(sett.SurvivorCount);
+                    int parent = rand.Next(Settings.SurvivorCount);
                     inds[parent].genes.CopyTo(inds[i].genes);
 
                     if (UseSavestates) {
@@ -106,7 +104,7 @@ namespace Featherline
 
         public void Mutate(FrameInd ind)
         {
-            int mutationCount = rand.Next(sett.MaxMutChangeCount);
+            int mutationCount = rand.Next(Settings.MaxMutChangeCount);
             int earliestMutatedFrame = 99999999;
             for (int m = 0; m <= mutationCount; m++) {
                 int end = rand.Next(1, UpToFrame - 1);
@@ -169,19 +167,18 @@ namespace Featherline
 
         public AngleSet favorite;
 
-        public FrameGenesGA(Settings s, int upToFrame)
+        public FrameGenesGA(int upToFrame)
         {
-            sett = s;
-            mutationMagnitude = sett.MutationMagnitude;
+            mutationMagnitude = Settings.MutationMagnitude;
 
-            favorite = ParseFavorite(s.Favorite, s.Framecount);
+            favorite = ParseFavorite(Settings.Favorite, Settings.Framecount);
             inds = favorite == null
-                ? new FrameInd[sett.Population].Select(i => new FrameInd(new AngleSet(sett.Framecount).Randomize())).ToArray()
-                : new int[sett.Population].Select(i => new FrameInd(favorite.Clone())).ToArray();
+                ? new FrameInd[Settings.Population].Select(i => new FrameInd(new AngleSet(Settings.Framecount).Randomize())).ToArray()
+                : new int[Settings.Population].Select(i => new FrameInd(favorite.Clone())).ToArray();
 
             if (favorite == null)
                 foreach (var ind in inds) {
-                    var sim = new FeatherSim(sett);
+                    var sim = new FeatherSim();
                     sim.SimulateIndivitual(ind.genes, upToFrame);
                     sim.Evaluate(out var fitness, out _);
                     ind.fitness = fitness;
@@ -215,7 +212,6 @@ namespace Featherline
     public class LineGenesGA
     {
         public LineInd[] inds;
-        private Settings sett;
 
         public int indLength;
         public int[] timings;
@@ -233,7 +229,7 @@ namespace Featherline
 
             GenerateNewChildren();
 
-            MyParallel.Run(sett.SurvivorCount, inds.Length, DoSim);
+            MyParallel.Run(Settings.SurvivorCount, inds.Length, DoSim);
 
             inds = inds.OrderByDescending(ind => ind.fitness).ToArray();
 
@@ -241,7 +237,7 @@ namespace Featherline
 
             void DoSim(int i)
             {
-                var sim = new FeatherSim(sett);
+                var sim = new FeatherSim();
                 sim.SimulateIndivitual(inds[i].ToFrameGenes(indLength, timings), runToFrame, inds[i].SkippingState);
                 sim.Evaluate(out var fitness, out _);
                 inds[i].fitness = fitness;
@@ -250,7 +246,7 @@ namespace Featherline
 
         private void GetAllStatesOfBest()
         {
-            foreach (var ind in inds.Take(sett.SurvivorCount)) {
+            foreach (var ind in inds.Take(Settings.SurvivorCount)) {
                 ind.states ??= GetStatesOf(ind);
                 UnExtremeifyAnglesOf(ind);
             }
@@ -259,7 +255,7 @@ namespace Featherline
         private Savestate[] GetStatesOf(LineInd ind)
         {
             if (ind.states is null) {
-                var states = new FeatherSim(sett).GetAllFrameData(ind.ToFrameGenes(indLength, timings), out _, out _);
+                var states = new FeatherSim().GetAllFrameData(ind.ToFrameGenes(indLength, timings), out _, out _);
 
                 return states;
             }
@@ -293,11 +289,11 @@ namespace Featherline
 
         private void GenerateNewChildren()
         {
-            for (int i = sett.SurvivorCount; i < inds.Length; i++) {
+            for (int i = Settings.SurvivorCount; i < inds.Length; i++) {
                 // crossover
                 if (rand.NextDouble() < crossoverProb) {
-                    int p1 = rand.Next(sett.SurvivorCount);
-                    int p2 = rand.Next(sett.SurvivorCount - 1);
+                    int p1 = rand.Next(Settings.SurvivorCount);
+                    int p2 = rand.Next(Settings.SurvivorCount - 1);
                     p2 += p2 >= p1 ? 1 : 0;
 
                     Crossover(inds[p1], inds[p2], inds[i], i == inds.Length - 1 ? null : inds[++i]);
@@ -305,7 +301,7 @@ namespace Featherline
 
                 // mutation
                 else {
-                    var parent = inds[rand.Next(sett.SurvivorCount)];
+                    var parent = inds[rand.Next(Settings.SurvivorCount)];
                     inds[i].CloneFrom(parent);
 
                     inds[i].parent = parent;
@@ -319,13 +315,13 @@ namespace Featherline
 
         private void Mutate(LineInd ind)
         {
-            int mutCount = rand.Next(sett.MaxMutChangeCount);
+            int mutCount = rand.Next(Settings.MaxMutChangeCount);
             int earliestChange = 99999999;
             for (int i = 0; i <= mutCount; i++) {
                 // adjust actual line angle
                 if (rand.Next(3) != 0) {
                     int target = rand.Next(earliestMutateableAngle, Min(ind.angles.Length, lastMutateableAngle));
-                    ind.angles[target] += ((float)rand.NextDouble() * 2 - 1) * sett.MutationMagnitude;
+                    ind.angles[target] += ((float)rand.NextDouble() * 2 - 1) * Settings.MutationMagnitude;
                     earliestChange = target == 0 ? -1 : Min(timings[target - 1], earliestChange);
                 }
                 // adjust end of line extra
@@ -368,15 +364,14 @@ namespace Featherline
 
         #endregion
 
-        public LineGenesGA(Settings s, int[] timings, AngleSet lineAngles)
+        public LineGenesGA(int[] timings, AngleSet lineAngles)
         {
-            sett = s;
 
             this.timings = timings;
-            indLength = s.Framecount;
+            indLength = Settings.Framecount;
 
 
-            inds = new LineInd[s.Population];
+            inds = new LineInd[Settings.Population];
 
             inds[0] = new LineInd(lineAngles);
             inds[0].states = GetStatesOf(inds[0]);

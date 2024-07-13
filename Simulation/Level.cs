@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using System.Globalization;
 using System.Collections;
 
@@ -26,8 +26,6 @@ public static class Level
 
     public static Checkpoint[]? Checkpoints;
 
-    static Settings? srcSett;
-
     public static Savestate? startState;
     public static Savestate? StartState { get => startState?.Copy(); }
     public static bool defineStartBoost;
@@ -39,7 +37,7 @@ public static class Level
 
     public static void PermanentDistFilter(AngleSet ind)
     {
-        var poses = new FeatherSim(GAManager.settings).GetAllFrameData(ind, out _, out _)
+        var poses = new FeatherSim().GetAllFrameData(ind, out _, out _)
             .Select(st => st.fState.pos).ToArray();
         Spinners = Spinners?.Where(spnr => poses.Any(p => p.Dist(spnr) < 50)).ToArray();
         Killboxes = Killboxes?.Where(RectBoxClose).ToArray();
@@ -52,14 +50,12 @@ public static class Level
         bool RectBoxClose(RectangleHitbox hb) => poses.Any(p => hb.GetActualDistance(p) < 50);
     }
 
-    public static void Prepare(Settings sourceSettings)
+    public static void Prepare()
     {
         Colliders = new RectangleHitbox[0];
         Killboxes = new RectangleHitbox[0];
 
-        srcSett = sourceSettings;
-        string src = File.ReadAllText(srcSett.InfoFile);
-        var split = Regex.Match(src, @"(.*Lerp:\s*-?\d+\.?\d*)(.*)" +
+        var split = Regex.Match(Settings.InfoDump, @"(.*Lerp:\s*-?\d+\.?\d*)(.*)" +
             "LightningUL:(.*)LightningDR:(.*)" +
             "SpikeUL:(.*)SpikeDR:(.*)SpikeDir:(.*)" +
             "Wind:(.*)WTPos:(.*)WTPattern:(.*)WTWidth:(.*)WTHeight(.*)" +
@@ -81,9 +77,9 @@ public static class Level
 
         GetSolidTiles(split.Groups[15].Value);
 
-        srcSett.ManualHitboxes ??= new string[0];
+        Settings.ManualHitboxes ??= new string[0];
         GetCustomHitboxes();
-        srcSett.Checkpoints ??= new string[0];
+        Settings.Checkpoints ??= new string[0];
         GetCheckpoints();
 
         CreateDangerBitfield();
@@ -342,10 +338,10 @@ public static class Level
         var lineEmpty = new Regex(@"^\s*$");
         var parseLine = new Regex(@"^\s*(.?\d+),\s*(.?\d+),\s*(.?\d+),\s*(.?\d+)(?:\s*$|\s*([cC]))");
 
-        for (int i = 0; i < srcSett.ManualHitboxes.Length; i++) {
-            if (lineEmpty.IsMatch(srcSett.ManualHitboxes[i])) continue;
+        for (int i = 0; i < Settings.ManualHitboxes.Length; i++) {
+            if (lineEmpty.IsMatch(Settings.ManualHitboxes[i])) continue;
 
-            var parse = parseLine.Match(srcSett.ManualHitboxes[i]);
+            var parse = parseLine.Match(Settings.ManualHitboxes[i]);
 
             if (!parse.Success)
                 throw new ArgumentException($"Invalid hitbox definition on line {i + 1}");
@@ -373,10 +369,10 @@ public static class Level
         var lineEmpty = new Regex(@"^\s*$");
         var parseLine = new Regex(@"^\s*(.?\d+),\s*(.?\d+),\s*(.?\d+),\s*(.?\d+)(?:\s*$|\s*([pP]))");
 
-        for (int i = 0; i < srcSett.Checkpoints.Length; i++) {
-            if (lineEmpty.IsMatch(srcSett.Checkpoints[i])) continue;
+        for (int i = 0; i < Settings.Checkpoints.Length; i++) {
+            if (lineEmpty.IsMatch(Settings.Checkpoints[i])) continue;
 
-            var parse = parseLine.Match(srcSett.Checkpoints[i]);
+            var parse = parseLine.Match(Settings.Checkpoints[i]);
 
             if (!parse.Success)
                 throw new ArgumentException($"Invalid checkpoint definition on line {i + 1}");

@@ -1,4 +1,4 @@
-﻿namespace Featherline;
+namespace Featherline;
 
 public class AnglePerfector
 {
@@ -7,8 +7,6 @@ public class AnglePerfector
 
     private int[] timings;
     private int indLen;
-
-    private Settings settings;
 
     public int count = 0;
 
@@ -25,7 +23,7 @@ public class AnglePerfector
     {
         for (int simLen = 2; simLen < best.angles.Length; simLen++) {
             if (current.fitness + 200d < baseInfoFitness)
-                current = TimingTester.FixInd(current, timings, settings.GensPerTiming / 2);
+                current = TimingTester.FixInd(current, timings, Settings.GensPerTiming / 2);
             for (int border = 0; border + simLen < best.angles.Length; border++) {
                 LineInd res = current;
                 for (int i = border; i < border + simLen; i++)
@@ -46,11 +44,11 @@ public class AnglePerfector
 
         for (int i = 0; i < 10; i++) {
 
-            new FeatherSim(settings)
+            new FeatherSim()
                     .SimulateIndivitual(current.ToFrameGenes(indLen, timings), indLen, current.SkippingState)
                     .Evaluate(out current.fitness, out _);
             if (current.fitness + 200d < baseInfoFitness)
-                current = TimingTester.FixInd(current, timings, settings.GensPerTiming / 2);
+                current = TimingTester.FixInd(current, timings, Settings.GensPerTiming / 2);
 
             var oldBorderExtras = current.borders.Clone(); 
 
@@ -113,7 +111,7 @@ public class AnglePerfector
             candidate.borders[borderIndex.start] = possibilities[i];
             AdjustAngles(candidate, borderIndex, out int survive);
             farthestSurvival = Math.Max(survive, farthestSurvival);
-            var sim = new FeatherSim(settings);
+            var sim = new FeatherSim();
             sim.SimulateIndivitual(candidate.ToFrameGenes(indLen, timings), IndexTimings(borderIndex.end));
             sim.Evaluate(out var fitness, out _);
             candidate.fitness = fitness;
@@ -187,7 +185,7 @@ public class AnglePerfector
                 candidate.borders[borderIndex.start] = (float)Math.Round(angles[i], 3);
                 AdjustAngles(candidate, borderIndex, out int survival);
                 farthestSurvival = Math.Max(survival, farthestSurvival);
-                var sim = new FeatherSim(settings);
+                var sim = new FeatherSim();
                 sim.SimulateIndivitual(candidate.ToFrameGenes(indLen, timings));
                 sim.Evaluate(out var fitness, out _);
                 candidate.fitness = fitness;
@@ -223,7 +221,7 @@ public class AnglePerfector
         }
 
         while (at < changeRegion.end) {
-            ind.SkippingState = new FeatherSim(settings).LineIndInfoAtFrame(ind, IndexTimings(at - 1) - 1, timings,
+            ind.SkippingState = new FeatherSim().LineIndInfoAtFrame(ind, IndexTimings(at - 1) - 1, timings,
                 (stop, fs, ws) => new Savestate(fs, ws));
 
             bool success = AdjustAngle(ind, at, changeRegion.end, out at, initialAngleFix);
@@ -273,8 +271,8 @@ public class AnglePerfector
 
             double GetFitness()
             {
-                var sim = new FeatherSim(settings);
-                return sim.LineIndInfoAtFrame(ind, settings.Framecount, timings, sim.FitnessGetter);
+                var sim = new FeatherSim();
+                return sim.LineIndInfoAtFrame(ind, Settings.Framecount, timings, sim.FitnessGetter);
             }
 
             bool TestAngle(out bool equal)
@@ -394,7 +392,7 @@ public class AnglePerfector
         bool CurrentFails(out Vector2 endPos)
         {
             bool stop; int cps; List<int> wallboops;
-            var sim = new FeatherSim(settings);
+            var sim = new FeatherSim();
             (stop, cps, endPos, wallboops) = sim.LineIndInfoAtFrame(ind, stateCheckFrame, timings,
                 (stop, fs, ws) => (stop, fs.checkpointsGotten, fs.ExactPosition, sim.wallboops));
 
@@ -417,16 +415,15 @@ public class AnglePerfector
 
     #endregion
 
-    public AnglePerfector(SavedTiming src, float precision, int changedTiming, Settings settings)
+    public AnglePerfector(SavedTiming src, float precision, int changedTiming)
     {
         this.precision = precision * 1.01f;
         best = new LineInd(src.ind.angles, src.ind.borders);
         current = best;
         timings = (int[])src.timings.Clone();
-        indLen = settings.Framecount;
-        this.settings = settings;
+        indLen = Settings.Framecount;
         AdjustAngles(best, range(0, timings.Length), out _, true);
-        var sim = new FeatherSim(settings);
+        var sim = new FeatherSim();
         sim.SimulateIndivitual(best.ToFrameGenes(indLen, timings));
         sim.Evaluate(out var fitness, out _);
         best.fitness = fitness;
