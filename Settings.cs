@@ -26,4 +26,6 @@ public class Settings
     public static int MaxThreadCount = Environment.ProcessorCount;
 
     public static string? InfoDump;
+
+    public static string? Output;
 }

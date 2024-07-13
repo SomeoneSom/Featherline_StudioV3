@@ -45,6 +45,7 @@ public static class GAManager
 
     public static bool RunAlgorithm(bool debugFavorite)
     {
+        Settings.Output = "";
         abortAlgorithm = false;
         algTimer.Restart();
         if (!InitializeAlgorithm())
@@ -168,6 +169,7 @@ public static class GAManager
 
             var output = best.inputs.ToString(fCount);
             Console.WriteLine("\n" + output);
+            Settings.Output = output;
         }
 
         Console.WriteLine($"\nAlgorithm took {algTimer.Elapsed} to run.");
