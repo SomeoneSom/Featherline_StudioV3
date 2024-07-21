@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using static System.Math;
 
 namespace Featherline;
@@ -53,6 +53,13 @@ public struct Vector2
     {
         X = x;
         Y = y;
+    }
+
+    public Vector2(object v)
+    {
+        var v2 = ((float, float))v;
+        X = v2.Item1;
+        Y = v2.Item2;
     }
 
     // normal angle (1, 0) = 0, counterclockwise, radians

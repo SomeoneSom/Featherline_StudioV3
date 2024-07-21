@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Globalization;
 using System.Collections;
+using System.Security.AccessControl;
 
 namespace Featherline;
 
@@ -55,27 +56,21 @@ public static class Level
         Colliders = new RectangleHitbox[0];
         Killboxes = new RectangleHitbox[0];
 
-        var split = Regex.Match(Settings.InfoDump, @"(.*Lerp:\s*-?\d+\.?\d*)(.*)" +
-            "LightningUL:(.*)LightningDR:(.*)" +
-            "SpikeUL:(.*)SpikeDR:(.*)SpikeDir:(.*)" +
-            "Wind:(.*)WTPos:(.*)WTPattern:(.*)WTWidth:(.*)WTHeight(.*)" +
-            "StarJumpUL:(.*)JThruUL:(.*?)Bounds:(.*)");
+        if (Settings.Info == null)
+            throw new Exception("No info!");
 
-        if (!split.Success)
-            throw new Exception("Unable to parse information from infodump.txt");
+        GetStartState();
 
-        GetStartState(split.Groups[1].Value);
+        GetSpinners();
+        GetLightning();
+        GetSpikes();
 
-        GetSpinners(split.Groups[2].Value);
-        GetLightning(split.Groups[3].Value, split.Groups[4].Value);
-        GetSpikes(split.Groups[5].Value, split.Groups[6].Value, split.Groups[7].Value);
+        GetWind();
 
-        GetWind(split.Groups[8].Value, split.Groups[9].Value, split.Groups[10].Value, split.Groups[11].Value, split.Groups[12].Value);
+        GetStaticTileEntities();
+        GetJumpThrus();
 
-        GetStaticTileEntities(split.Groups[13].Value);
-        GetJumpThrus(split.Groups[14].Value);
-
-        GetSolidTiles(split.Groups[15].Value);
+        GetSolidTiles();
 
         Settings.ManualHitboxes ??= new string[0];
         GetCustomHitboxes();
@@ -85,67 +80,59 @@ public static class Level
         CreateDangerBitfield();
     }
 
-    private static void GetStartState(string src)
+    private static void GetStartState()
     {
         startState = new Savestate();
 
-        var pairs = Regex.Matches(src, @"(-?\d+\.?\d*), (-?\d+\.?\d*)")
-            .Select(m => new Vector2(float.Parse(m.Groups[1].Value), float.Parse(m.Groups[2].Value)))
-            .ToArray();
-        startState.fState.spd = pairs[1];
-        startState.fState.moveCounter = pairs[2];
-        startState.fState.pos = new IntVec2(pairs[0] - pairs[2]);
-        startState.fState.lerp = float.Parse(Regex.Match(src, @"Lerp: (.*)").Groups[1].Value);
+        startState.fState.spd = new Vector2(Settings.Info![0]);
+        startState.fState.moveCounter = new Vector2(Settings.Info![2]);
+        startState.fState.pos = new IntVec2(new Vector2(Settings.Info![1]) - new Vector2(Settings.Info[2]));
+        startState.fState.lerp = (float)Settings.Info![3];
 
         if (startState.fState.spd.X == 0 && startState.fState.spd.Y == 0)
             throw new ArgumentException();
     }
 
-    private static void GetSpinners(string src)
+    private static void GetSpinners()
     {
-        Spinners = getIntPair.Matches(src)
-            .Select(MatchToIntVec2)
-            .Distinct()
-            .ToArray();
+        Spinners = GetIntVecs(Settings.Info![4]);
     }
 
-    private static void GetLightning(string UL, string DR)
+    private static void GetLightning()
     {
-        var getUL = getIntPair.Matches(UL);
-        var getDR = getIntPair.Matches(DR);
+        var UL = (List<(float, float)>)Settings.Info![5];
+        var DR = (List<(float, float)>)Settings.Info![6];
 
-        Killboxes = Killboxes.Concat(getUL.Select((m, i) => new RectangleHitbox(new Bounds(
-                int.Parse(m.Groups[1].Value),
-                int.Parse(m.Groups[2].Value),
-                int.Parse(getDR[i].Groups[1].Value),
-                int.Parse(getDR[i].Groups[2].Value)
+        Killboxes = Killboxes.Concat(UL.Select((m, i) => new RectangleHitbox(new Bounds(
+                (int)m.Item1,
+                (int)m.Item2,
+                (int)DR[i].Item1,
+                (int) DR[i].Item2
                 ).Expand(false)
             ))).ToArray();
     }
 
-    private static void GetSpikes(string UL, string DR, string dir)
+    private static void GetSpikes()
     {
-        var ULs = GetIntPairs(UL);
-        var DRs = GetIntPairs(DR);
-        var getDir = Regex.Matches(dir, @"Left|Right|Up|Down");
+        string[] dirs = {"Up", "Down", "Left", "Right"};
+        var ULs = GetIntVecs(Settings.Info![7]);
+        var DRs = GetIntVecs(Settings.Info![8]);
+        var getDir = (List<int>)Settings.Info![9];
 
-        Spikes = ULs.Select((v, i) => new Spike(new Bounds(v, DRs[i]).Expand(false), getDir[i].Value)).ToArray();
+        Spikes = ULs.Select((v, i) => new Spike(new Bounds(v, DRs[i]).Expand(false), dirs[getDir[i]])).ToArray();
     }
 
-    private static void GetJumpThrus(string src)
+    private static void GetJumpThrus()
     {
-        var split = Regex.Match(src,
-            @"(.*)JThruDR:(.*)SideJTUL:(.*)SideJTDR:(.*)SideJTIsRight:(.*)SideJTPushes:(.*)UpsDJTUL:(.*)UpsDJTDR:(.*)UpsDJTPushes:(.*)");
-
-        IntVec2[] normalULs = GetIntPairs(split.Groups[1].Value);
-        IntVec2[] normalDRs = GetIntPairs(split.Groups[2].Value);
-        IntVec2[] sideULs = GetIntPairs(split.Groups[3].Value);
-        IntVec2[] sideDRs = GetIntPairs(split.Groups[4].Value);
-        bool[] sidesToR = GetBools(split.Groups[5].Value);
-        bool[] sidesPush = GetBools(split.Groups[6].Value);
-        IntVec2[] upsDULs = GetIntPairs(split.Groups[7].Value);
-        IntVec2[] upsDDRs = GetIntPairs(split.Groups[8].Value);
-        bool[] upsDPush = GetBools(split.Groups[9].Value);
+        IntVec2[] normalULs = GetIntVecs(Settings.Info![18]);
+        IntVec2[] normalDRs = GetIntVecs(Settings.Info![19]);
+        IntVec2[] sideULs = GetIntVecs(Settings.Info![20]);
+        IntVec2[] sideDRs = GetIntVecs(Settings.Info![21]);
+        List<bool> sidesToR = (List<bool>)Settings.Info![22];
+        List<bool> sidesPush = (List<bool>) Settings.Info![23];
+        IntVec2[] upsDULs = GetIntVecs(Settings.Info![24]);
+        IntVec2[] upsDDRs = GetIntVecs(Settings.Info![25]);
+        List<bool> upsDPush = (List<bool>) Settings.Info![26];
 
         NormalJTs = normalULs.Select((v, i) => new NormalJT(new Bounds(v, normalDRs[i]).Expand(true))).ToArray();
 
@@ -163,31 +150,27 @@ public static class Level
         CustomJTs = customJTs.ToArray();
     }
 
-    private static void GetWind(string init, string positions, string patterns, string widths, string heights)
+    private static void GetWind()
     {
-        var getInit = Regex.Match(init, @"(-?\d+\.?\d*), (-?\d+\.?\d*)");
-        InitWind = new Vector2(
-            float.Parse(getInit.Groups[1].Value, CultureInfo.InvariantCulture) / 10,
-            float.Parse(getInit.Groups[2].Value, CultureInfo.InvariantCulture) / 10);
+        InitWind = new Vector2(Settings.Info![10]);
 
-        IntVec2[] getPoses = Regex.Matches(positions, @"(-?\d+)\.?\d*, (-?\d+)")
-            .Select(m => new IntVec2(int.Parse(m.Groups[1].Value), int.Parse(m.Groups[2].Value))).ToArray();
-        string[] getPatterns = Regex.Matches(patterns, @" (\w+) ").Select(m => m.Groups[1].Value).ToArray();
-        int[] getWidths = Regex.Matches(widths, @" (\d+)\.\d* ").Select(m => int.Parse(m.Groups[1].Value)).ToArray();
-        int[] getHeights = Regex.Matches(heights, @" (\d+)\.\d* ").Select(m => int.Parse(m.Groups[1].Value)).ToArray();
+        IntVec2[] getPoses = GetIntVecs(Settings.Info![11]);
+        List<int> getPatterns = (List<int>)Settings.Info![12];
+        List<float> getWidths = (List<float>)Settings.Info![13];
+        List<float> getHeights = (List<float>)Settings.Info![14];
 
         var listWT = new List<WindTrigger>();
 
         for (int i = 0; i < getPoses.Length; i++) {
             (bool vertical, float stren, bool valid) pattern = getPatterns[i] switch {
-                "Left" => (false, -40, true),
-                "LeftStrong" => (false, -80, true),
-                "Right" => (false, 40, true),
-                "RightStrong" => (false, 80, true),
-                "RightCrazy" => (false, 120, true),
-                "Up" => (true, -40, true),
-                "Down" => (true, 30, true),
-                "None" => (false, 0, true),
+                1 => (false, -40, true),
+                3 => (false, -80, true),
+                2 => (false, 40, true),
+                4 => (false, 80, true),
+                11 => (false, 120, true),
+                13 => (true, -40, true),
+                12 => (true, 30, true),
+                0 => (false, 0, true),
                 _ => (false, 0, false)
             };
 
@@ -197,7 +180,7 @@ public static class Level
                 continue;
             }
 
-            listWT.Add(new WindTrigger(getPoses[i], new IntVec2(getWidths[i], getHeights[i]), pattern.vertical, pattern.stren));
+            listWT.Add(new WindTrigger(getPoses[i], new IntVec2((int)getWidths[i], (int)getHeights[i]), pattern.vertical, pattern.stren));
         }
 
         WindTriggers = listWT.ToArray();
@@ -298,21 +281,20 @@ public static class Level
         }
     }
 
-    private static void GetSolidTiles(string src)
+    private static void GetSolidTiles()
     {
-        var parts = Regex.Match(src, @"{X:(-?\d+) Y:(-?\d+) Width:(\d+) Height:(\d+)}\sSolids:(.*)");
         Tiles = new SolidTileInfo() {
-            x = int.Parse(parts.Groups[1].Value),
-            y = int.Parse(parts.Groups[2].Value),
-            width = int.Parse(parts.Groups[3].Value),
-            height = int.Parse(parts.Groups[4].Value)
+            x = (int)Settings.Info[27],
+            y = (int)Settings.Info[28],
+            width = (int)Settings.Info[29],
+            height = (int)Settings.Info[30]
         };
         Tiles.rightBound = Tiles.x + Tiles.width;
         Tiles.lowestYIndex = Tiles.height / 8 - 1;
 
         int widthInTiles = Tiles.width / 8;
 
-        string tileMap = Regex.Replace(parts.Groups[5].Value, @",\s", "");
+        string tileMap = Regex.Replace((string)Settings.Info[31], @",\s", "");
         var rowMatches = Regex.Matches(tileMap, @"(?<= )[^ ]*");
         Tiles.map = rowMatches.Select(RowStrToBitArr).ToArray();
 
@@ -392,18 +374,21 @@ public static class Level
         Checkpoints = res.ToArray();
     }
 
-    private static void GetStaticTileEntities(string starJump)
+    private static void GetStaticTileEntities()
     {
         var res = new List<RectangleHitbox>();
 
-        var SJParts = Regex.Match(starJump, @"(.*)StarJumpDR:(.*)StarJumpSinks:(.*)");
-        var SJULs = GetIntPairs(SJParts.Groups[1].Value);
-        var SJDRs = GetIntPairs(SJParts.Groups[2].Value);
-        var SJSink = GetBools(SJParts.Groups[3].Value);
+        var SJULs = GetIntVecs(Settings.Info![15]);
+        var SJDRs = GetIntVecs(Settings.Info![16]);
+        var SJSink = ((List<bool>)Settings.Info![17]).ToArray();
         for (int i = 0; i < SJULs.Length; i++)
             if (!SJSink[i])
                 res.Add(new RectangleHitbox(new Bounds(SJULs[i], SJDRs[i]).Expand(true)));
 
         Colliders = Colliders.Concat(res).ToArray();
+    }
+
+    private static IntVec2[] GetIntVecs(object info) {
+        return ((List<(float, float)>)info).Select(v => new IntVec2(new Vector2(v))).ToArray();
     }
 }
