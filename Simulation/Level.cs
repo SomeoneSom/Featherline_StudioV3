@@ -84,10 +84,10 @@ public static class Level
     {
         startState = new Savestate();
 
-        startState.fState.spd = new Vector2(Settings.Info![0]);
-        startState.fState.moveCounter = new Vector2(Settings.Info![2]);
-        startState.fState.pos = new IntVec2(new Vector2(Settings.Info![1]) - new Vector2(Settings.Info[2]));
-        startState.fState.lerp = (float)Settings.Info![3];
+        startState.fState.spd = new Vector2(Settings.Info!.Value.Speed);
+        startState.fState.moveCounter = new Vector2(Settings.Info!.Value.PosRemainder);
+        startState.fState.pos = new IntVec2(new Vector2(Settings.Info!.Value.Pos) - new Vector2(Settings.Info!.Value.PosRemainder));
+        startState.fState.lerp = Settings.Info!.Value.Lerp;
 
         if (startState.fState.spd.X == 0 && startState.fState.spd.Y == 0)
             throw new ArgumentException();
@@ -95,13 +95,13 @@ public static class Level
 
     private static void GetSpinners()
     {
-        Spinners = GetIntVecs(Settings.Info![4]);
+        Spinners = GetIntVecs(Settings.Info!.Value.Spinners);
     }
 
     private static void GetLightning()
     {
-        var UL = (List<(float, float)>)Settings.Info![5];
-        var DR = (List<(float, float)>)Settings.Info![6];
+        var UL = Settings.Info!.Value.LightningUL;
+        var DR = Settings.Info!.Value.LightningDR;
 
         Killboxes = Killboxes.Concat(UL.Select((m, i) => new RectangleHitbox(new Bounds(
                 (int)m.Item1,
@@ -115,24 +115,24 @@ public static class Level
     private static void GetSpikes()
     {
         string[] dirs = {"Up", "Down", "Left", "Right"};
-        var ULs = GetIntVecs(Settings.Info![7]);
-        var DRs = GetIntVecs(Settings.Info![8]);
-        var getDir = (List<int>)Settings.Info![9];
+        var ULs = GetIntVecs(Settings.Info!.Value.SpikeUL);
+        var DRs = GetIntVecs(Settings.Info!.Value.SpikeDR);
+        var getDir = Settings.Info!.Value.SpikeDir;
 
         Spikes = ULs.Select((v, i) => new Spike(new Bounds(v, DRs[i]).Expand(false), dirs[getDir[i]])).ToArray();
     }
 
     private static void GetJumpThrus()
     {
-        IntVec2[] normalULs = GetIntVecs(Settings.Info![18]);
-        IntVec2[] normalDRs = GetIntVecs(Settings.Info![19]);
-        IntVec2[] sideULs = GetIntVecs(Settings.Info![20]);
-        IntVec2[] sideDRs = GetIntVecs(Settings.Info![21]);
-        List<bool> sidesToR = (List<bool>)Settings.Info![22];
-        List<bool> sidesPush = (List<bool>) Settings.Info![23];
-        IntVec2[] upsDULs = GetIntVecs(Settings.Info![24]);
-        IntVec2[] upsDDRs = GetIntVecs(Settings.Info![25]);
-        List<bool> upsDPush = (List<bool>) Settings.Info![26];
+        IntVec2[] normalULs = GetIntVecs(Settings.Info!.Value.JThruUL);
+        IntVec2[] normalDRs = GetIntVecs(Settings.Info!.Value.JThruDR);
+        IntVec2[] sideULs = GetIntVecs(Settings.Info!.Value.SideJTUL);
+        IntVec2[] sideDRs = GetIntVecs(Settings.Info!.Value.SideJTDR);
+        List<bool> sidesToR = (List<bool>)Settings.Info!.Value.SideJTIsRight;
+        List<bool> sidesPush = (List<bool>) Settings.Info!.Value.SideJTPushes;
+        IntVec2[] upsDULs = GetIntVecs(Settings.Info!.Value.UpsJTUL);
+        IntVec2[] upsDDRs = GetIntVecs(Settings.Info!.Value.UpsJTDR);
+        List<bool> upsDPush = (List<bool>) Settings.Info!.Value.UpsJTPushes;
 
         NormalJTs = normalULs.Select((v, i) => new NormalJT(new Bounds(v, normalDRs[i]).Expand(true))).ToArray();
 
@@ -152,12 +152,12 @@ public static class Level
 
     private static void GetWind()
     {
-        InitWind = new Vector2(Settings.Info![10]);
+        InitWind = new Vector2(Settings.Info!.Value.Wind);
 
-        IntVec2[] getPoses = GetIntVecs(Settings.Info![11]);
-        List<int> getPatterns = (List<int>)Settings.Info![12];
-        List<float> getWidths = (List<float>)Settings.Info![13];
-        List<float> getHeights = (List<float>)Settings.Info![14];
+        IntVec2[] getPoses = GetIntVecs(Settings.Info!.Value.WTPos);
+        List<int> getPatterns = Settings.Info!.Value.WTPattern;
+        List<float> getWidths = Settings.Info!.Value.WTWidth;
+        List<float> getHeights = Settings.Info!.Value.WTHeight;
 
         var listWT = new List<WindTrigger>();
 
@@ -284,17 +284,17 @@ public static class Level
     private static void GetSolidTiles()
     {
         Tiles = new SolidTileInfo() {
-            x = (int)Settings.Info[27],
-            y = (int)Settings.Info[28],
-            width = (int)Settings.Info[29],
-            height = (int)Settings.Info[30]
+            x = Settings.Info!.Value.BoundsX,
+            y = Settings.Info!.Value.BoundsY,
+            width = Settings.Info!.Value.BoundsWidth,
+            height = Settings.Info!.Value.BoundsHeight,
         };
         Tiles.rightBound = Tiles.x + Tiles.width;
         Tiles.lowestYIndex = Tiles.height / 8 - 1;
 
         int widthInTiles = Tiles.width / 8;
 
-        string tileMap = Regex.Replace((string)Settings.Info[31], @",\s", "");
+        string tileMap = Regex.Replace((string)Settings.Info!.Value.Solids, @",\s", "");
         var rowMatches = Regex.Matches(tileMap, @"(?<= )[^ ]*");
         Tiles.map = rowMatches.Select(RowStrToBitArr).ToArray();
 
@@ -378,9 +378,9 @@ public static class Level
     {
         var res = new List<RectangleHitbox>();
 
-        var SJULs = GetIntVecs(Settings.Info![15]);
-        var SJDRs = GetIntVecs(Settings.Info![16]);
-        var SJSink = ((List<bool>)Settings.Info![17]).ToArray();
+        var SJULs = GetIntVecs(Settings.Info!.Value.StarJumpUL);
+        var SJDRs = GetIntVecs(Settings.Info!.Value.StarJumpDR);
+        var SJSink = Settings.Info!.Value.StarJumpSinks.ToArray();
         for (int i = 0; i < SJULs.Length; i++)
             if (!SJSink[i])
                 res.Add(new RectangleHitbox(new Bounds(SJULs[i], SJDRs[i]).Expand(true)));
@@ -388,7 +388,7 @@ public static class Level
         Colliders = Colliders.Concat(res).ToArray();
     }
 
-    private static IntVec2[] GetIntVecs(object info) {
+    private static IntVec2[] GetIntVecs(List<(float, float)> info) {
         return ((List<(float, float)>)info).Select(v => new IntVec2(new Vector2(v))).ToArray();
     }
 }
