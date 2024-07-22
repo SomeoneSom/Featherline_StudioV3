@@ -8,4 +8,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <Import Project="..\..\StudioCommunication\StudioCommunication.targets" />
+
 </Project>
