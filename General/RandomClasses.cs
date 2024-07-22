@@ -55,11 +55,10 @@ public struct Vector2
         Y = y;
     }
 
-    public Vector2(object v)
+    public Vector2((float, float) v)
     {
-        var v2 = ((float, float))v;
-        X = v2.Item1;
-        Y = v2.Item2;
+        X = v.Item1;
+        Y = v.Item2;
     }
 
     // normal angle (1, 0) = 0, counterclockwise, radians

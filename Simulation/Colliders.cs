@@ -1,4 +1,4 @@
-﻿using static System.Math;
+using static System.Math;
 
 namespace Featherline;
 
@@ -16,6 +16,7 @@ public readonly struct Bounds
         Df = d - 0.5f;
     }
     public Bounds(IntVec2 UL, IntVec2 DR) : this(UL.X, UL.Y, DR.X, DR.Y) { }
+    public Bounds(float X, float Y, float W, float H) : this((int)X, (int)Y, (int)(X + W), (int)(Y + H)) { }
 
     public Bounds Expand(/*bool featherHitbox, */bool collider)
     {

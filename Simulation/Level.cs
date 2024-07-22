@@ -56,9 +56,6 @@ public static class Level
         Colliders = new RectangleHitbox[0];
         Killboxes = new RectangleHitbox[0];
 
-        if (Settings.Info == null)
-            throw new Exception("No info!");
-
         GetStartState();
 
         GetSpinners();
@@ -84,10 +81,10 @@ public static class Level
     {
         startState = new Savestate();
 
-        startState.fState.spd = new Vector2(Settings.Info!.Value.Speed);
-        startState.fState.moveCounter = new Vector2(Settings.Info!.Value.PosRemainder);
-        startState.fState.pos = new IntVec2(new Vector2(Settings.Info!.Value.Pos) - new Vector2(Settings.Info!.Value.PosRemainder));
-        startState.fState.lerp = Settings.Info!.Value.Lerp;
+        startState.fState.spd = new Vector2(Settings.Info.Player.Speed);
+        startState.fState.moveCounter = new Vector2(Settings.Info.Player.PositionRemainder);
+        startState.fState.pos = new IntVec2(new Vector2(Settings.Info.Player.Position) - new Vector2(Settings.Info.Player.PositionRemainder));
+        startState.fState.lerp = Settings.Info.Player.starFlySpeedLerp;
 
         if (startState.fState.spd.X == 0 && startState.fState.spd.Y == 0)
             throw new ArgumentException();
@@ -95,92 +92,70 @@ public static class Level
 
     private static void GetSpinners()
     {
-        Spinners = GetIntVecs(Settings.Info!.Value.Spinners);
+        Spinners = GetIntVecs(Settings.Info.Spinners);
     }
 
     private static void GetLightning()
     {
-        var UL = Settings.Info!.Value.LightningUL;
-        var DR = Settings.Info!.Value.LightningDR;
-
-        Killboxes = Killboxes.Concat(UL.Select((m, i) => new RectangleHitbox(new Bounds(
-                (int)m.Item1,
-                (int)m.Item2,
-                (int)DR[i].Item1,
-                (int) DR[i].Item2
-                ).Expand(false)
+        Killboxes = Killboxes.Concat(Settings.Info.Lightning.Select(m => new RectangleHitbox(new Bounds(m.X, m.Y, m.W, m.H).Expand(false)
             ))).ToArray();
     }
 
     private static void GetSpikes()
     {
-        string[] dirs = {"Up", "Down", "Left", "Right"};
-        var ULs = GetIntVecs(Settings.Info!.Value.SpikeUL);
-        var DRs = GetIntVecs(Settings.Info!.Value.SpikeDR);
-        var getDir = Settings.Info!.Value.SpikeDir;
-
-        Spikes = ULs.Select((v, i) => new Spike(new Bounds(v, DRs[i]).Expand(false), dirs[getDir[i]])).ToArray();
+        Spikes = Settings.Info.Spikes.Select(v => new Spike(new Bounds(v.X, v.Y, v.W, v.H).Expand(false), nameof(v.Direction))).ToArray();
     }
 
     private static void GetJumpThrus()
     {
-        IntVec2[] normalULs = GetIntVecs(Settings.Info!.Value.JThruUL);
-        IntVec2[] normalDRs = GetIntVecs(Settings.Info!.Value.JThruDR);
-        IntVec2[] sideULs = GetIntVecs(Settings.Info!.Value.SideJTUL);
-        IntVec2[] sideDRs = GetIntVecs(Settings.Info!.Value.SideJTDR);
-        List<bool> sidesToR = (List<bool>)Settings.Info!.Value.SideJTIsRight;
-        List<bool> sidesPush = (List<bool>) Settings.Info!.Value.SideJTPushes;
-        IntVec2[] upsDULs = GetIntVecs(Settings.Info!.Value.UpsJTUL);
-        IntVec2[] upsDDRs = GetIntVecs(Settings.Info!.Value.UpsJTDR);
-        List<bool> upsDPush = (List<bool>) Settings.Info!.Value.UpsJTPushes;
-
-        NormalJTs = normalULs.Select((v, i) => new NormalJT(new Bounds(v, normalDRs[i]).Expand(true))).ToArray();
-
-        
+        var normalJTs = new List<NormalJT>();
         var customJTs = new List<CustomJT>();
-
-        for (int i = 0; i < sideULs.Length; i++)
-            customJTs.Add(new CustomJT(new Bounds(sideULs[i], sideDRs[i]).Expand(true),
-                sidesToR[i] ? Facings.Right : Facings.Left, sidesPush[i]));
-
-        for (int i = 0; i < upsDULs.Length; i++)
-            customJTs.Add(new CustomJT(new Bounds(upsDULs[i], upsDDRs[i]).Expand(true),
-                Facings.Down, false/*upsDPush[i]*/));
-
+        foreach (var v in Settings.Info.JumpThrus) {
+            switch (v.Direction) {
+                case StudioCommunication.GameState.Direction.Down:
+                    normalJTs.Add(new NormalJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true)));
+                    break;
+                case StudioCommunication.GameState.Direction.Right:
+                    customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Right, v.PullsPlayer));
+                    break;
+                case StudioCommunication.GameState.Direction.Left:
+                    customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Left, v.PullsPlayer));
+                    break;
+                case StudioCommunication.GameState.Direction.Up:
+                    customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Up, v.PullsPlayer));
+                    break;
+            }
+        }
+        NormalJTs = normalJTs.ToArray();
         CustomJTs = customJTs.ToArray();
     }
 
     private static void GetWind()
     {
-        InitWind = new Vector2(Settings.Info!.Value.Wind);
-
-        IntVec2[] getPoses = GetIntVecs(Settings.Info!.Value.WTPos);
-        List<int> getPatterns = Settings.Info!.Value.WTPattern;
-        List<float> getWidths = Settings.Info!.Value.WTWidth;
-        List<float> getHeights = Settings.Info!.Value.WTHeight;
+        InitWind = new Vector2(Settings.Info.Level.WindDirection);
 
         var listWT = new List<WindTrigger>();
 
-        for (int i = 0; i < getPoses.Length; i++) {
-            (bool vertical, float stren, bool valid) pattern = getPatterns[i] switch {
-                1 => (false, -40, true),
-                3 => (false, -80, true),
-                2 => (false, 40, true),
-                4 => (false, 80, true),
-                11 => (false, 120, true),
-                13 => (true, -40, true),
-                12 => (true, 30, true),
-                0 => (false, 0, true),
+        foreach (var wt in Settings.Info.WindTriggers) {
+            (bool vertical, float stren, bool valid) pattern = wt.Pattern switch {
+                StudioCommunication.GameState.WindPattern.Left => (false, -40, true),
+                StudioCommunication.GameState.WindPattern.LeftStrong => (false, -80, true),
+                StudioCommunication.GameState.WindPattern.Right => (false, 40, true),
+                StudioCommunication.GameState.WindPattern.RightStrong => (false, 80, true),
+                StudioCommunication.GameState.WindPattern.RightCrazy => (false, 120, true),
+                StudioCommunication.GameState.WindPattern.Up => (true, -40, true),
+                StudioCommunication.GameState.WindPattern.Down => (true, 30, true),
+                StudioCommunication.GameState.WindPattern.None => (false, 0, true),
                 _ => (false, 0, false)
             };
 
             if (!pattern.valid) {
-                Console.WriteLine($"There was a wind trigger pattern \"{getPatterns[i]}\" that couldn't be processed.\n The algorithm will run without accounting for it after you press enter.");
+                Console.WriteLine($"There was a wind trigger pattern \"{wt.Pattern}\" that couldn't be processed.\n The algorithm will run without accounting for it after you press enter.");
                 Console.ReadLine();
                 continue;
             }
 
-            listWT.Add(new WindTrigger(getPoses[i], new IntVec2((int)getWidths[i], (int)getHeights[i]), pattern.vertical, pattern.stren));
+            listWT.Add(new WindTrigger(new IntVec2((int)wt.X, (int)wt.Y), new IntVec2((int)wt.W, (int)wt.H), pattern.vertical, pattern.stren));
         }
 
         WindTriggers = listWT.ToArray();
@@ -284,17 +259,17 @@ public static class Level
     private static void GetSolidTiles()
     {
         Tiles = new SolidTileInfo() {
-            x = Settings.Info!.Value.BoundsX,
-            y = Settings.Info!.Value.BoundsY,
-            width = Settings.Info!.Value.BoundsWidth,
-            height = Settings.Info!.Value.BoundsHeight,
+            x = Settings.Info.Level.Bounds.X,
+            y = Settings.Info.Level.Bounds.Y,
+            width = Settings.Info.Level.Bounds.W,
+            height = Settings.Info.Level.Bounds.H,
         };
         Tiles.rightBound = Tiles.x + Tiles.width;
         Tiles.lowestYIndex = Tiles.height / 8 - 1;
 
         int widthInTiles = Tiles.width / 8;
 
-        string tileMap = Regex.Replace((string)Settings.Info!.Value.Solids, @",\s", "");
+        string tileMap = Regex.Replace((string)Settings.Info.SolidsData, @",\s", "");
         var rowMatches = Regex.Matches(tileMap, @"(?<= )[^ ]*");
         Tiles.map = rowMatches.Select(RowStrToBitArr).ToArray();
 
@@ -378,17 +353,14 @@ public static class Level
     {
         var res = new List<RectangleHitbox>();
 
-        var SJULs = GetIntVecs(Settings.Info!.Value.StarJumpUL);
-        var SJDRs = GetIntVecs(Settings.Info!.Value.StarJumpDR);
-        var SJSink = Settings.Info!.Value.StarJumpSinks.ToArray();
-        for (int i = 0; i < SJULs.Length; i++)
-            if (!SJSink[i])
-                res.Add(new RectangleHitbox(new Bounds(SJULs[i], SJDRs[i]).Expand(true)));
+        foreach (var s in Settings.Info.StaticSolids) {
+            res.Add(new RectangleHitbox(new Bounds(s.X, s.Y, s.W, s.H).Expand(true)));
+        }
 
         Colliders = Colliders.Concat(res).ToArray();
     }
 
-    private static IntVec2[] GetIntVecs(List<(float, float)> info) {
-        return ((List<(float, float)>)info).Select(v => new IntVec2(new Vector2(v))).ToArray();
+    private static IntVec2[] GetIntVecs((float, float)[] info) {
+        return info.Select(v => new IntVec2(new Vector2(v))).ToArray();
     }
 }

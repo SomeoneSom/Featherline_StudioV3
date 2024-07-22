@@ -7,26 +7,6 @@ namespace Featherline;
 
 public static class GAManager
 {
-    #region WindowManipulationImports
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    static extern bool AllocConsole();
-
-    [DllImport("user32.dll")]
-    static extern bool FlashWindow(IntPtr hwnd, bool bInvert);
-
-    [DllImport("kernel32.dll")]
-    static extern IntPtr GetConsoleWindow();
-
-    [DllImport("user32.dll")]
-    internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    [DllImport("user32.dll")]
-    internal static extern IntPtr SetForegroundWindow(IntPtr hWnd);
-
-    #endregion
-
     public const float Revolution = 360f;
 
     public static Random rand = new Random();
@@ -103,9 +83,6 @@ public static class GAManager
             }
         }
 
-        if (!abortAlgorithm)
-            FlashWindow(consoleWindow, true);
-
         return true;
     }
 
@@ -113,13 +90,6 @@ public static class GAManager
 
     private static bool InitializeAlgorithm()
     {
-        AllocConsole();
-        Console.Title = "Featherline Output Console";
-        Console.Clear();
-
-        consoleWindow = GetConsoleWindow();
-        ShowWindow(consoleWindow, 1);
-        SetForegroundWindow(consoleWindow);
 
         // data extraction and input exception handling
         try {
