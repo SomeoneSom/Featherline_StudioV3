@@ -8,6 +8,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <Import Project="..\..\StudioCommunication\StudioCommunication.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj" />
+  </ItemGroup>
 
 </Project>
