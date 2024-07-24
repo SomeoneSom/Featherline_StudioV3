@@ -112,7 +112,7 @@ public static class Level
         var customJTs = new List<CustomJT>();
         foreach (var v in Settings.Info.JumpThrus) {
             switch (v.Direction) {
-                case StudioCommunication.GameState.Direction.Down:
+                case StudioCommunication.GameState.Direction.Up:
                     normalJTs.Add(new NormalJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true)));
                     break;
                 case StudioCommunication.GameState.Direction.Right:
@@ -121,8 +121,8 @@ public static class Level
                 case StudioCommunication.GameState.Direction.Left:
                     customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Left, v.PullsPlayer));
                     break;
-                case StudioCommunication.GameState.Direction.Up:
-                    customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Up, v.PullsPlayer));
+                case StudioCommunication.GameState.Direction.Down:
+                    customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Down, v.PullsPlayer));
                     break;
             }
         }
@@ -269,7 +269,7 @@ public static class Level
 
         int widthInTiles = Tiles.width / 8;
 
-        string tileMap = Regex.Replace((string)Settings.Info.SolidsData, @",\s", "");
+        string tileMap = Regex.Replace(Settings.Info.SolidsData, @",\s", "");
         var rowMatches = Regex.Matches(tileMap, @"(?<= )[^ ]*");
         Tiles.map = rowMatches.Select(RowStrToBitArr).ToArray();
 
