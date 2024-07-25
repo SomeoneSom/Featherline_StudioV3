@@ -28,5 +28,8 @@ public class Settings
 
     public static StudioCommunication.GameState Info;
 
+    public static IProgress<string> TextReporter;
+    public static IProgress<int> ProgressReporter;
+
     public static string? Output;
 }

@@ -33,6 +33,8 @@ namespace Featherline
             }
 
             if (!Settings.TimingTestFavDirectly) {
+                Settings.TextReporter.Report("Running Light Timing Tester...");
+                Settings.ProgressReporter.Report(0);
                 GAManager.lastPhase = AlgPhase.TimingTesterLight;
                 var firstTiming = UseAlgOnTiming(best.timings, best.ind.angles, Settings.GensPerTiming);
                 best = new SavedTiming(firstTiming, best.timings);
@@ -57,6 +59,8 @@ namespace Featherline
                 WriteColor($"Light input cleanup. Down to {best.ind.angles.Length} lines of input.\n\n", Yellow); // light cleanup
                 if (best.timings.Length == 0) { EndDueToZeroTimings(); return; }
 
+                Settings.TextReporter.Report("Running Heavy Timing Tester...");
+                Settings.ProgressReporter.Report(25);
                 GAManager.lastPhase = AlgPhase.TimingTesterHeavy;
                 TestUntilNoImprovement(Settings.GensPerTiming, true, 2); // phase 2 intermediate testing
                 AddCandidate(AlgPhase.TimingTesterHeavy);
@@ -69,6 +73,7 @@ namespace Featherline
                 WriteColor($"Strict logical input cleanup. Down to {best.ind.angles.Length} lines of input.\n\n", Yellow); // strict cleanup
                 if (best.timings.Length == 0) { EndDueToZeroTimings(); return; }
 
+                Settings.ProgressReporter.Report(50);
                 WriteColor("Optimizing cleaned inputs.\n\n", Yellow);
                 TestUntilNoImprovement(Settings.GensPerTiming, false, 0); // phase 3 more intermediate testing
                 AddCandidate(AlgPhase.TimingTesterHeavy);
@@ -82,6 +87,8 @@ namespace Featherline
                 best.ind = FixInd(best.ind, best.timings, Settings.GensPerTiming * 3);
             }
 
+            Settings.TextReporter.Report("Running Angle Perfector...");
+            Settings.ProgressReporter.Report(75);
             perfecting = true;
             best.ind.fitness = -99999d;
             current = best.Clone();

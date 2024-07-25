@@ -57,24 +57,35 @@ public static class Level
         Killboxes = new RectangleHitbox[0];
 
         GetStartState();
+        Settings.ProgressReporter.Report(8);
 
         GetSpinners();
+        Settings.ProgressReporter.Report(15);
         GetLightning();
+        Settings.ProgressReporter.Report(23);
         GetSpikes();
+        Settings.ProgressReporter.Report(31);
 
         GetWind();
+        Settings.ProgressReporter.Report(38);
 
         GetStaticTileEntities();
+        Settings.ProgressReporter.Report(46);
         GetJumpThrus();
+        Settings.ProgressReporter.Report(54);
 
         GetSolidTiles();
+        Settings.ProgressReporter.Report(62);
 
         Settings.ManualHitboxes ??= new string[0];
         GetCustomHitboxes();
+        Settings.ProgressReporter.Report(69);
         Settings.Checkpoints ??= new string[0];
         GetCheckpoints();
+        Settings.ProgressReporter.Report(77);
 
         CreateDangerBitfield();
+        Settings.ProgressReporter.Report(85);
     }
 
     private static void GetStartState()

@@ -28,6 +28,7 @@ public static class GAManager
         Settings.Output = "";
         abortAlgorithm = false;
         algTimer.Restart();
+        Settings.TextReporter.Report("Initializing...");
         if (!InitializeAlgorithm())
             return false;
         algTimer.Stop();
@@ -54,6 +55,8 @@ public static class GAManager
         }
 
         if (Settings.FrameBasedOnly | !Settings.TimingTestFavDirectly) {
+            Settings.TextReporter.Report("Running Basic Algorithm...");
+            Settings.ProgressReporter.Report(0);
             DoFrameGeneBasedAlgorithm();
             if (abortAlgorithm) {
                 Console.Write("\n\n");
@@ -64,6 +67,7 @@ public static class GAManager
 
         if (!Settings.FrameBasedOnly) {
             TimingTester TT;
+            Settings.ProgressReporter.Report(0);
             if (Settings.TimingTestFavDirectly) {
                 if (!ValidFavDecPlaces()) {
                     Console.WriteLine("Featherline cannot handle more than 3 decimal points.");
@@ -83,6 +87,9 @@ public static class GAManager
             }
         }
 
+        Settings.TextReporter.Report("Done! You can now close this dialog.");
+        Settings.ProgressReporter.Report(100);
+
         return true;
     }
 
@@ -90,7 +97,6 @@ public static class GAManager
 
     private static bool InitializeAlgorithm()
     {
-
         // data extraction and input exception handling
         try {
             Level.Prepare();
@@ -106,12 +112,15 @@ public static class GAManager
         }
         finally { }
         if (Level.Checkpoints.Length == 0) {
+            Settings.TextReporter.Report("No valid checkpoints were provided.");
             Console.WriteLine("No valid checkpoints were provided; the algorithm has nothing to aim for.");
             return false;
         }
 
         MyParallel.Initialize();
+        Settings.ProgressReporter.Report(92);
         AngleCalc.Initialize();
+        Settings.ProgressReporter.Report(100);
         return true;
     }
 
@@ -198,6 +207,7 @@ public static class GAManager
             for (int j = 0; j < gensPerFrame; j++) {
                 if (abortAlgorithm) return;
                 ga.DoGeneration(i, true);
+                Settings.ProgressReporter.Report((int) ((float) generation / (float) Settings.Generations * 100));
                 GenerationFeedback(generation, Settings.Generations, ga.GetBestFitness());
                 generation++;
             }
@@ -208,6 +218,7 @@ public static class GAManager
     {
         for (; generation <= Settings.Generations; generation++) {
             if (abortAlgorithm) return;
+            Settings.ProgressReporter.Report((int)((float)generation / (float)Settings.Generations * 100));
             GenerationFeedback(generation, Settings.Generations, ga.GetBestFitness());
             ga.DoGeneration(Settings.Framecount, true);
         }
@@ -295,8 +306,9 @@ public static class GAManager
             : raw + ".00000";
     }
 
-    public static void GenerationFeedback(int gen, int maxGens, double fitness) =>
+    public static void GenerationFeedback(int gen, int maxGens, double fitness) {
         Console.Write($"\r{gen}/{maxGens} generations done. Best fitness: {fitness.FitnessFormat()}");
+    }
 
     #endregion
 }
