@@ -1,3 +1,4 @@
+using StudioCommunication;
 using static System.Math;
 
 namespace Featherline;
@@ -17,6 +18,8 @@ public readonly struct Bounds
     }
     public Bounds(IntVec2 UL, IntVec2 DR) : this(UL.X, UL.Y, DR.X, DR.Y) { }
     public Bounds(float X, float Y, float W, float H) : this((int)X, (int)Y, (int)(X + W), (int)(Y + H)) { }
+
+    public Bounds(GameState.RectF rect) : this(rect.X, rect.Y, rect.W, rect.H) { }
 
     public Bounds Expand(/*bool featherHitbox, */bool collider)
     {
@@ -41,7 +44,7 @@ public readonly struct Bounds
     }
 
     public Bounds Expand() => new Bounds(L, U, R + 1, D + 1);
-        
+
     public override string ToString() => $"L:{L}, U:{U}, R:{R}, D:{D}";
 }
 

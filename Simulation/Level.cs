@@ -1,3 +1,4 @@
+using StudioCommunication;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using System.Collections;
@@ -114,7 +115,7 @@ public static class Level
 
     private static void GetSpikes()
     {
-        Spikes = Settings.Info.Spikes.Select(v => new Spike(new Bounds(v.X, v.Y, v.W, v.H).Expand(false), nameof(v.Direction))).ToArray();
+        Spikes = Settings.Info.Spikes.Select(v => new Spike(new Bounds(v.Bounds).Expand(false), nameof(v.Direction))).ToArray();
     }
 
     private static void GetJumpThrus()
@@ -124,16 +125,16 @@ public static class Level
         foreach (var v in Settings.Info.JumpThrus) {
             switch (v.Direction) {
                 case StudioCommunication.GameState.Direction.Up:
-                    normalJTs.Add(new NormalJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true)));
+                    normalJTs.Add(new NormalJT(new Bounds(v.Bounds).Expand(true)));
                     break;
                 case StudioCommunication.GameState.Direction.Right:
-                    customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Right, v.PullsPlayer));
+                    customJTs.Add(new CustomJT(new Bounds(v.Bounds).Expand(true), Facings.Right, v.PullsPlayer));
                     break;
                 case StudioCommunication.GameState.Direction.Left:
-                    customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Left, v.PullsPlayer));
+                    customJTs.Add(new CustomJT(new Bounds(v.Bounds).Expand(true), Facings.Left, v.PullsPlayer));
                     break;
                 case StudioCommunication.GameState.Direction.Down:
-                    customJTs.Add(new CustomJT(new Bounds(v.X, v.Y, v.W, v.H).Expand(true), Facings.Down, v.PullsPlayer));
+                    customJTs.Add(new CustomJT(new Bounds(v.Bounds).Expand(true), Facings.Down, v.PullsPlayer));
                     break;
             }
         }
@@ -166,7 +167,7 @@ public static class Level
                 continue;
             }
 
-            listWT.Add(new WindTrigger(new IntVec2((int)wt.X, (int)wt.Y), new IntVec2((int)wt.W, (int)wt.H), pattern.vertical, pattern.stren));
+            listWT.Add(new WindTrigger(new IntVec2((int)wt.Bounds.X, (int)wt.Bounds.Y), new IntVec2((int)wt.Bounds.W, (int)wt.Bounds.H), pattern.vertical, pattern.stren));
         }
 
         WindTriggers = listWT.ToArray();
@@ -330,7 +331,7 @@ public static class Level
         Colliders = Colliders.Concat(colls).ToArray();
         Killboxes = Killboxes.Concat(kbs).ToArray();
     }
-    
+
     private static void GetCheckpoints()
     {
         var res = new List<Checkpoint>();
@@ -371,7 +372,7 @@ public static class Level
         Colliders = Colliders.Concat(res).ToArray();
     }
 
-    private static IntVec2[] GetIntVecs((float, float)[] info) {
+    private static IntVec2[] GetIntVecs(GameState.Vec2[] info) {
         return info.Select(v => new IntVec2(new Vector2(v))).ToArray();
     }
 }

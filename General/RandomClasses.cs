@@ -1,3 +1,4 @@
+using StudioCommunication;
 using System.Collections;
 using static System.Math;
 
@@ -55,10 +56,10 @@ public struct Vector2
         Y = y;
     }
 
-    public Vector2((float, float) v)
+    public Vector2(GameState.Vec2 v)
     {
-        X = v.Item1;
-        Y = v.Item2;
+        X = v.X;
+        Y = v.Y;
     }
 
     // normal angle (1, 0) = 0, counterclockwise, radians
