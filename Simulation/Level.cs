@@ -144,7 +144,7 @@ public static class Level
 
     private static void GetWind()
     {
-        InitWind = new Vector2(Settings.Info.Level.WindDirection);
+        InitWind = new Vector2(Settings.Info.Level.WindDirection.X / 10f, Settings.Info.Level.WindDirection.Y / 10f);
 
         var listWT = new List<WindTrigger>();
 
